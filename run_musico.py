@@ -51,12 +51,21 @@ if __name__ == "__main__":
     nth_frame = args.nth_frame # process only every n-th frame
 
     ## Video save
+    output_file_stem = 'ml-musico'
     if not os.path.exists(args.save_path):
         os.mkdir(args.save_path)
     dt = datetime.datetime.now().strftime('%Y-%m-%dT%H%M')
-    output_file = os.path.join(
+    output_file_video = os.path.join(
         args.save_path, 
-        f'ml-musico_video_{dt}.avi' # save video feed to file
+        f'{output_file_stem}_video_{dt}.avi' # save video feed to file
+    )
+    output_file_emotionplot = os.path.join(
+        args.save_path,
+        f'{output_file_stem}_emotionplot_{dt}.png' # save emotion plot to file
+    )
+    output_file_emotiondata = os.path.join(
+        args.save_path,
+        f'{output_file_stem}_emotiondata_{dt}.csv' # save emotion plot to file
     )
 
 
@@ -76,6 +85,7 @@ if __name__ == "__main__":
     # Variables for collecting data from video
     emotion_labels = pd.Series(get_labels('fer2013'))
     emotion_history = pd.DataFrame(columns=emotion_labels)
+    emotion_history.index.name = 'frame'
     ## Colors for emotions
     emotion_colors_name = pd.Series({
         'angry': 'red',
@@ -97,6 +107,8 @@ if __name__ == "__main__":
         line, = ax.plot(0, 0, color=emotion_colors_name[emotion], label=emotion)
         plotlines[emotion] = line
     ax.legend(loc='upper left')
+    ax.set_xlabel('Frame')
+    ax.set_ylabel('Emotion probability (average)')
     plt.show(block=False)
 
     # starting video streaming
@@ -111,10 +123,10 @@ if __name__ == "__main__":
         demo_file = pkg_resources.resource_filename('musico.emotions.demo', 'dinner.mp4')
         cap = cv2.VideoCapture(demo_file) # Video file source
 
-    # Prepare save to file
+    # Prepare video save to file
     frame_size = (int(cap.get(3)), int(cap.get(4)))
     output_fwriter = cv2.VideoWriter(
-        filename=output_file,
+        filename=output_file_video,
         fourcc=cv2.VideoWriter_fourcc('M','J','P','G'), # AVI
         # fourcc=cv2.VideoWriter_fourcc('X','2','6','4'), # MP4
         fps=24, 
@@ -203,5 +215,10 @@ if __name__ == "__main__":
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+    # Close video feed
     cap.release()
     cv2.destroyAllWindows()
+
+    # Save emotion plot
+    plt.savefig(output_file_emotionplot)
+    emotion_history.to_csv(output_file_emotiondata, index=True)
