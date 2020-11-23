@@ -1,0 +1,79 @@
+# This settings.yaml file specifies all available parameters for this project
+Program:
+  ## This section lists all the available parameters for the program
+  use_webcam: -1          # -1 is a demo video, values 0 and above select available webcams.
+  rolling_window: 5       # Number of frames for rolling average.
+  nth_frame: 5            # Process only every n-th frame. This can speed up processing.
+  save_path: './storage'  # Folder for storing recorded videos and data.
+Emotions:
+  ## Settings for emotions, like which ones are used and their color etc.
+  Used:
+    ### Do not change the order here
+    ### Put a comment '#' in front of those that you do not want to use
+    - angry
+    # - disgust
+    # - fear
+    - happy
+    - sad
+    - surprise
+    - neutral
+  Colors:
+    ### Colors used in plots
+    angry: 'red'
+    disgust: 'brown'
+    fear: 'black'
+    happy: 'yellow'
+    sad: 'darkblue'
+    surprise: 'lightblue'
+    neutral: 'green'
+Instructions:
+  Used:
+    ### These are the available instructions and their properties for display, add or remove to your liking
+    AME: 
+      name: Aussermusikalisches Event
+      color: purple
+      size: 20
+      max_occurrence: 4    # Number of times in total that an instruction may appear in the song
+    EZA: 
+      name: Einzelaktion
+      color: black
+      size: 40
+      max_occurrence: 999
+    FLA: 
+      name: Fläche
+      color: green
+      size: 50
+      max_occurrence: 999
+    MLD: 
+      name: Melodie
+      color: red
+      size: 30
+      max_occurrence: 999
+    RTM: 
+      name: Rythmus
+      color: black
+      size: 30
+      max_occurrence: 999
+    SND: 
+      name: Sounds / Geräuschklänge
+      color: blue
+      size: 25
+      max_occurrence: 999
+    TCT: 
+      name: Tacet / Stille & Freeze
+      color: gray
+      size: 20
+      max_occurrence: 999
+  End:
+    ## Special instruction for the end of the piece
+    END:
+      name: Ende!!
+      color: orange
+      size: 50
+  Rules:
+    min_seconds_between_instructions: 1 
+    max_seconds_between_instructions: 1 # If no instruction was given after this time, a random one is given (according to the other rules)
+    max_minutes_song: 0.1    # Max length of the whole piece
+    max_repeats_per_instruction: 1  # Number of times that an instruction can be repeated in direct succession
+Events:
+  ## Predefined events

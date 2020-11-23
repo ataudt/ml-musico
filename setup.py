@@ -19,6 +19,8 @@ setup(
         'opencv-python==4.4.0.46',
         'Keras==2.4.3',
         'tensorflow==2.3.1',
+        'xlrd==1.2.0',
+        'openpyxl==3.0.5',
     ],
     include_package_data = True,
 )
