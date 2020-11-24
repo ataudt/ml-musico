@@ -19,35 +19,53 @@ import time
 
 import yaml
 from configparser import ConfigParser
+import argparse
 from pprint import pprint
 
 from musico.instructions import instruct
+from musico.instructions import events
 
 # ----------------------------------------------------------------------------------------------------------
 # Main function for running as script
 # ----------------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
+    # Command line arguments
+    parser = argparse.ArgumentParser(description='Available command line arguments. Specified command line arguments will overwrite settings from the config file.')
+    parser.add_argument(
+        '--config_file', type=str, required=False, default='./settings.yaml',
+        help='Settings file in YAML format with all necessary parameters.'
+    )
+    parser.add_argument(
+        '--video_file', type=str, required=False,
+        help='Video file for processing. Will overwrite the config-file setting.'
+    )
+    parser.add_argument(
+        '--show_events', required=False, default=False, action='store_true',
+        help='Whether to show the events on the emotion plot.'
+    )
+    cargs = parser.parse_args()
+
     # Import setttings
-    with open("settings.yaml", "r") as yamlfile:
+    with open(cargs.config_file, "r") as yamlfile:
         settings = yaml.load(yamlfile, Loader=yaml.FullLoader)
     print("Imported settings: ")
     pprint(settings)
 
     ## Assign Program parameters
-    USE_WEBCAM = int(settings['Program']['use_webcam'])
-    ROLLING_WINDOW = int(settings['Program']['rolling_window'])
-    NTH_FRAME = int(settings['Program']['nth_frame'])
+    SHOW_EVENTS = cargs.show_events
+    USE_WEBCAM = settings['Program']['use_webcam']
+    ROLLING_WINDOW = settings['Program']['rolling_window']
+    NTH_FRAME = settings['Program']['nth_frame']
     SAVE_PATH = settings['Program']['save_path']
 
 
     ## Assign Emotion parameters
-    EMOTIONS_USED = pd.Series(settings['Emotions']['Used'])
-    EMOTIONS_COLORS = pd.Series(settings['Emotions']['Colors'])
+    EMOTIONS = pd.Series(settings['Emotions']['Properties'].keys())
+    EMOTIONS_COLORS = pd.Series({emotion: props['color'] for emotion, props in settings['Emotions']['Properties'].items()})
 
     ## Assign Instructions
-    INSTRUCTIONS_USED = pd.Series(settings['Instructions']['Used'])
-    INSTRUCTIONS_END = pd.Series(settings['Instructions']['End'])
+    INSTRUCTIONS_PROPS = pd.Series(settings['Instructions']['Properties'])
     INSTRUCTIONS_RULES = settings['Instructions']['Rules']
 
     ## Assign Events
@@ -92,18 +110,19 @@ if __name__ == "__main__":
 
     ## Variables for collecting data from video
     emotion_labels = pd.Series(get_labels('fer2013'))
-    emotion_history = pd.DataFrame(columns=['frame','time'] + list(EMOTIONS_USED))
+    emotion_history = pd.DataFrame(columns=['frame','time','time_min'] + list(EMOTIONS))
     ## Colors for emotions
     emotion_colors = EMOTIONS_COLORS.apply(lambda color: mcolors.to_rgb(color))
     emotion_colors = emotion_colors.apply(lambda tup: tuple(map(lambda x: x*255, tup)))
     ## Initialize with random instruction
     new_instruction = instruct.give_random_instruction(
-        instructions=INSTRUCTIONS_USED, 
+        instructions=INSTRUCTIONS_PROPS, 
         rules=INSTRUCTIONS_RULES,
-        history=None,
+        history_instr=None,
     )
+    last_instruction = new_instruction
     instruction_history = instruct.update_history(
-        history = None, frame = 0, time = 0, key = new_instruction['key'],
+        history_instr = None, frame = 0, time = 0, instruction_key = new_instruction['key'], event_key = None,
     )
 
     # Prepare plots
@@ -111,11 +130,11 @@ if __name__ == "__main__":
     fig_em, ax_em = plt.subplots()
     ax_em.set_ylim(0,1)
     plotlines = pd.Series(index=emotion_labels, dtype='object')
-    for emotion in EMOTIONS_USED:
+    for emotion in EMOTIONS:
         line, = ax_em.plot(0, 0, color=EMOTIONS_COLORS[emotion], label=emotion)
         plotlines[emotion] = line
-    ax_em.legend(loc='upper left')
-    ax_em.set_xlabel('Frame')
+    ax_em.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", mode="expand", ncol=len(EMOTIONS))
+    ax_em.set_xlabel('Time [min]')
     ax_em.set_ylabel('Emotion probability (average)')
     fig_em.show()
     ## For giving instructions
@@ -131,11 +150,21 @@ if __name__ == "__main__":
     video_capture = cv2.VideoCapture(0)
     ## Select video or webcam feed
     cap = None
-    if (USE_WEBCAM >= 0):
-        cap = cv2.VideoCapture(USE_WEBCAM) # Webcam source
+    if cargs.video_file is not None:
+        ### Use command line specified video file
+        cap = cv2.VideoCapture(cargs.video_file)
     else:
-        demo_file = pkg_resources.resource_filename('musico.emotions.demo', 'dinner.mp4')
-        cap = cv2.VideoCapture(demo_file) # Video file source
+        ### Use webcam or demo file
+        if (USE_WEBCAM >= 0):
+            cap = cv2.VideoCapture(USE_WEBCAM) # Webcam source
+        else:
+            if USE_WEBCAM == -2:
+                demo_file = pkg_resources.resource_filename('musico.emotions.demo', 'developer.mov')
+            else:
+                demo_file = pkg_resources.resource_filename('musico.emotions.demo', 'dinner.mp4')
+            cap = cv2.VideoCapture(demo_file) # Video file source
+        if not cap.isOpened():
+            raise ValueError("Video stream could not be opened. Aborting...")
 
     ## Prepare video save to file
     frame_size = (int(cap.get(3)), int(cap.get(4)))
@@ -160,8 +189,8 @@ if __name__ == "__main__":
     while cap.isOpened(): # True:
         ## Increase frame counter, set time
         iframe += 1
-        itime = round(time.perf_counter() - time0, 2)
-        print(f'iframe = {iframe}, itime = {itime}s')
+        itime = time.perf_counter() - time0
+        print(f'iframe = {iframe}, itime = {itime:.2f}s')
 
         ## Grab, but not process, the next frame
         retval = cap.grab()
@@ -189,7 +218,7 @@ if __name__ == "__main__":
         )
 
         ## Loop over faces in frame
-        emotion_faces = pd.DataFrame(columns=EMOTIONS_USED, index=range(len(faces)))
+        emotion_faces = pd.DataFrame(columns=EMOTIONS, index=range(len(faces)))
         for iface, face_coordinates in enumerate(faces):
 
             ### Preprocess face
@@ -207,7 +236,7 @@ if __name__ == "__main__":
             ### Recognize emotions
             emotion_prediction = emotion_classifier.predict(gray_face)
             emotion_prediction = pd.Series(emotion_prediction[0], index=emotion_labels)
-            emotion_prediction = emotion_prediction[EMOTIONS_USED]
+            emotion_prediction = emotion_prediction[EMOTIONS]
             emotion_faces.loc[iface, :] = emotion_prediction
             emotion_max_probability = emotion_prediction.max()
             emotion_text = emotion_prediction.idxmax()
@@ -227,21 +256,24 @@ if __name__ == "__main__":
         draw_text(
             coordinates=[0, frame_size[1], 0, 0], 
             image_array=rgb_image, 
-            text=f'frame = {iframe}, time = {itime}s',
+            text=f'frame = {iframe}, time = {itime:.2f}s',
             color=(0,0,0), # color
             x_offset=0, y_offset=-5, font_scale=0.5, thickness=1, 
         )
 
         ## Collect emotion probabilities (averaged over all faces in frame)
         emotion_face_average = emotion_faces.mean(axis=0)
-        emotion_history.loc[iframe, ['frame','time']] = [iframe, itime]
-        emotion_history.loc[iframe, EMOTIONS_USED] = emotion_face_average
+        emotion_history.loc[iframe, ['frame','time','time_min']] = [iframe, itime, itime/60.0]
+        emotion_history.loc[iframe, EMOTIONS] = emotion_face_average
         emotion_history_rolling = emotion_history.rolling(window=ROLLING_WINDOW).mean()
-        for emotion in EMOTIONS_USED:
+        emotionrank_history_rolling = emotion_history_rolling.copy()
+        emotionrank_history_rolling.loc[:, EMOTIONS] = emotion_history_rolling.loc[:, EMOTIONS].rank(axis=1, method='dense', ascending=False)
+        for emotion in EMOTIONS:
             line = plotlines[emotion]
             line.set_ydata(emotion_history_rolling.loc[:, emotion])
-            line.set_xdata(emotion_history_rolling.index)
-        ax_em.set_xlim(0,max(1, max(emotion_history_rolling.index)))
+            line.set_xdata(emotion_history_rolling.loc[:, 'time_min'])
+        upper_xlim = max(1, emotion_history_rolling['time_min'].max())
+        ax_em.set_xlim(0, upper_xlim)
         fig_em.canvas.draw()
         fig_em.canvas.flush_events()
 
@@ -256,38 +288,66 @@ if __name__ == "__main__":
 
 
         # Evaluate instructions
-        if itime > INSTRUCTIONS_RULES['max_minutes_song']*60:
-            ## Song is over
-            new_instruction = INSTRUCTIONS_END['END']
-            new_instruction['key'] = 'END'
-            instruct.update_history(
-                history = instruction_history, frame=iframe, time=itime, key=new_instruction['key']
-            )
+        if last_instruction['key'] == 'END':
+            ## Song was ended before, do not give further instructions
+            pass
         else:
-            ## Song is still on
-
-            ### Check time of last instruction
-            time_since_last_instruction = itime - instruction_history.iloc[-1, :]['time']
-            if time_since_last_instruction > INSTRUCTIONS_RULES['max_seconds_between_instructions']:
-                ### Give new instruction because none has been given for too long
-                new_instruction = instruct.give_random_instruction(
-                    instructions=INSTRUCTIONS_USED, 
-                    rules=INSTRUCTIONS_RULES,
-                    history=instruction_history
-                )
+            ## Song was playing so far
+            if itime > INSTRUCTIONS_RULES['max_minutes_song']*60:
+                ## Song is over now
+                new_instruction = INSTRUCTIONS_PROPS['END']
+                new_instruction['key'] = 'END'
                 instruct.update_history(
-                    history = instruction_history, frame=iframe, time=itime, key=new_instruction['key']
+                    history_instr = instruction_history, frame=iframe, time=itime, instruction_key=new_instruction['key'], event_key=None,
                 )
             else:
-                ### Last instruction was quite recent
+                ## Song is still on
 
-                if time_since_last_instruction <= INSTRUCTIONS_RULES['min_seconds_between_instructions']:
-                    #### Stay with current instruction
-                    pass
+                ### Check time of last instruction
+                time_since_last_instruction = itime - instruction_history.iloc[-1, :]['time']
+                if time_since_last_instruction > INSTRUCTIONS_RULES['max_seconds_between_instructions']:
+                    ### Give new instruction because none has been given for too long
+                    new_instruction = instruct.give_random_instruction(
+                        instructions=INSTRUCTIONS_PROPS, 
+                        rules=INSTRUCTIONS_RULES,
+                        history_instr=instruction_history,
+                    )
+                    instruct.update_history(
+                        history_instr = instruction_history, frame=iframe, time=itime, instruction_key=new_instruction['key'], event_key=None,
+                    )
                 else:
-                    #### Evaluate events
-                    pass
+                    ### Last instruction was quite recent
 
+                    if time_since_last_instruction <= INSTRUCTIONS_RULES['min_seconds_between_instructions']:
+                        #### Stay with current instruction
+                        pass
+                    else:
+                        #### Evaluate events
+                        new_event = events.evaluate_events(
+                            history_emo = emotion_history_rolling,
+                            EVENTS = EVENTS,
+                            EMOTIONS = EMOTIONS,
+                        )
+                        if new_event is not None:
+                            if SHOW_EVENTS:
+                                ax_em = events.draw_event(
+                                    ax=ax_em, time=emotion_history_rolling['time_min'].iloc[-1], event=new_event,
+                                )
+                            #### Give next instruction
+                            next_instructions = INSTRUCTIONS_PROPS[new_event['next_instructions']]
+                            new_instruction = instruct.give_random_instruction(
+                                instructions=next_instructions, 
+                                rules=INSTRUCTIONS_RULES,
+                                history_instr=instruction_history,
+                            )
+                            instruct.update_history(
+                                history_instr = instruction_history, frame=iframe, time=itime, instruction_key=new_instruction['key'], event_key = new_event['key'],
+                            )
+
+
+        ## Set last instruction
+        last_instruction = new_instruction
+        ## Display instruction
         del ax_in.texts[-1]
         ax_in = instruct.draw_instruction(ax=ax_in, instruction=new_instruction)
         fig_in.canvas.draw()

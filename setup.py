@@ -6,7 +6,7 @@ setup(
     version = '0.10',
     packages = [
         'musico.emotions.utils', 'musico.emotions.models', 'musico.emotions.demo',
-        'musico.directives',
+        'musico.instructions',
     ],
     long_description=open('README.md').read(),
     install_requires=[

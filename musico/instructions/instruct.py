@@ -1,23 +1,37 @@
 import pandas as pd
+from pprint import pprint
 
 
-def check_validity(instruction_new, history, rules):
+def check_validity(instruction_new, history_instr, rules):
 
     key = instruction_new['key']
 
+    ## First instruction given always True (history_instr == None), except for END
+    if history_instr is None:
+        if key == 'END':
+            return False
+        else:
+            return True
+
     ## Check if we are over 'max_occurrence'
-    if len(history[history['instruction-key'] == key]) >= instruction_new['max_occurrence']:
+    if len(history_instr[history_instr['instruction-key'] == key]) >= instruction_new['max_occurrence']:
+        print(f"Exceeded 'max_occurrence'.")
         return False
 
     ## Check if we are over 'max_repeats_per_instruction'
-    last_n_keys = history.tail(rules['max_repeats_per_instruction'])['instruction-key']
+    last_n_keys = history_instr.tail(rules['max_repeats_per_instruction'])['instruction-key']
     if (last_n_keys == key).all():
+        print("Exceeded 'max_repeats_per_instruction'.")
+        return False
+
+    ## Check if END instruction was selected
+    if key == 'END':
         return False
 
     return True
 
 
-def give_random_instruction(instructions, rules, history):
+def give_random_instruction(instructions, rules, history_instr):
     """Give a random instruction."""
 
     instruction_valid = False
@@ -30,17 +44,19 @@ def give_random_instruction(instructions, rules, history):
         instruction_with_key['key'] = instruction_new.keys()[0]
 
         # Check validity
-        if history is None:
-            instruction_valid = True
-        else:
-            instruction_valid = check_validity(
-                instruction_new=instruction_with_key,
-                history=history,
-                rules=rules,
-            )
+        instruction_valid = check_validity(
+            instruction_new=instruction_with_key,
+            history_instr=history_instr,
+            rules=rules,
+        )
 
-        if valid_counter >= 100:
-            raise ValueError("Impossible definition of constraints.")
+        if valid_counter >= 50:
+            message = "Impossible definition of rules. Available instructions: "
+            print(message)
+            pprint(instructions.to_dict())
+            print("Instruction history: ")
+            print(history_instr)
+            instruction_valid = True
 
     return instruction_with_key
 
@@ -48,6 +64,9 @@ def give_random_instruction(instructions, rules, history):
 def draw_instruction(ax, instruction):
     """Draw the instruction on the axis."""
 
+    if instruction is None:
+        return ax
+        
     if len(ax.texts) > 0:
         ## Delete old instruction in plot
         del ax.texts[-1]
@@ -60,22 +79,31 @@ def draw_instruction(ax, instruction):
     )
     return ax
 
-def update_history(history, frame, time, key):
-    """Update the history dataframe for instructions."""
+def update_history(history_instr, frame, time, instruction_key, event_key):
+    """Update the history_instr dataframe for instructions."""
 
-    if history is None:
-        ## Initialize history dataframe
-        history = pd.DataFrame(
-            data={'frame': frame, 'time': time, 'instruction-key': key, 'occurrence': 1},
+    if history_instr is None:
+        ## Initialize history_instr dataframe
+        history_instr = pd.DataFrame(
+            data={
+                'frame': frame, 
+                'time': time, 
+                'instruction-key': instruction_key, 
+                'instruction-occurrence': 1,
+                'event-key': event_key,
+                'event-occurrence': None,
+            },
             index=pd.Index([frame], name='iframe')
         )
     else:
         ## Append new entry
-        history.loc[frame, ['frame','time','instruction-key','occurrence']] = [
+        history_instr.loc[frame, ['frame','time','instruction-key','instruction-occurrence','event-key','event-occurrence']] = [
             frame, 
             time, 
-            key, 
-            len(history[history['instruction-key'] == key]) + 1
+            instruction_key, 
+            len(history_instr[history_instr['instruction-key'] == instruction_key]) + 1,
+            event_key, 
+            len(history_instr[history_instr['event-key'] == event_key]) + 1
         ]
 
-    return history
+    return history_instr

@@ -1,39 +1,43 @@
 # This settings.yaml file specifies all available parameters for this project
 Program:
   ## This section lists all the available parameters for the program
-  use_webcam: -1          # -1 is a demo video, values 0 and above select available webcams.
+  use_webcam: -2          # -1 and -2 are demo videos, values 0 and above select available webcams.
   rolling_window: 5       # Number of frames for rolling average.
-  nth_frame: 5            # Process only every n-th frame. This can speed up processing.
+  nth_frame: 1            # Process only every n-th frame. This can speed up processing.
   save_path: './storage'  # Folder for storing recorded videos and data.
+
+
 Emotions:
   ## Settings for emotions, like which ones are used and their color etc.
-  Used:
+
+  Properties:
     ### Do not change the order here
     ### Put a comment '#' in front of those that you do not want to use
-    - angry
-    # - disgust
-    # - fear
-    - happy
-    - sad
-    - surprise
-    - neutral
-  Colors:
-    ### Colors used in plots
-    angry: 'red'
-    disgust: 'brown'
-    fear: 'black'
-    happy: 'yellow'
-    sad: 'darkblue'
-    surprise: 'lightblue'
-    neutral: 'green'
+    angry: 
+      color: red
+    # disgust: 
+    #   color: brown
+    # fear: 
+    #   color: black
+    happy: 
+      color: yellow
+    sad: 
+      color: darkblue
+    surprise: 
+      color: lightblue
+    neutral: 
+      color: green
+
 Instructions:
-  Used:
+  ## Instructions and Rules
+
+  Properties:
     ### These are the available instructions and their properties for display, add or remove to your liking
-    AME: 
-      name: Aussermusikalisches Event
-      color: purple
-      size: 20
-      max_occurrence: 4    # Number of times in total that an instruction may appear in the song
+    AME:                                # Identifier for data analysis
+      name: Aussermusikalisches Event   # Text for instruction display
+      color: purple                     # Color for instruction display
+      size: 20                          # Font size for instruction display
+      max_occurrence: 4                 # Number of times in total that an instruction may appear in the song
     EZA: 
       name: Einzelaktion
       color: black
@@ -64,16 +68,65 @@ Instructions:
       color: gray
       size: 20
       max_occurrence: 999
-  End:
-    ## Special instruction for the end of the piece
-    END:
+    END: # Special instruction for the end of the piece
       name: Ende!!
       color: orange
       size: 50
+      max_occurrence: 1
+
   Rules:
-    min_seconds_between_instructions: 1 
-    max_seconds_between_instructions: 1 # If no instruction was given after this time, a random one is given (according to the other rules)
-    max_minutes_song: 0.1    # Max length of the whole piece
+    ### Rules or constraints on the instructions
+    min_seconds_between_instructions: 20
+    max_seconds_between_instructions: 180 # If no instruction was given after this time, a random one is given (according to the other rules)
+    max_minutes_song: 30    # Max length of the whole piece
     max_repeats_per_instruction: 1  # Number of times that an instruction can be repeated in direct succession
+
+
 Events:
-  ## Predefined events
+  ## Events will be checked at runtime in the order that is specified here. The first event that matches will be used.
+
+  Percentage-Change-Emotion:
+    ### Events where a specified emotion changes by a certain percentage. Percentage changes are always interpreted as "at least that change or more" of the value given.
+    # event-pct-lessangry-1:          # somewhat systematic name for the event
+    #   emotions: [angry]         # name of the emotion
+    #   pct_change: -50           # change in percentage, either positive or negative
+    #   time_in_seconds: 3        # time window in which that change should happen
+    #   color: gray               # event color for plot
+    #   next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]  # list of possible instructions that might follow this event
+    event-pct-morehappy-1:
+      emotions: [happy]
+      pct_change: 150
+      time_in_seconds: 3
+      color: gray
+      next_instructions: [RTM,SND]
+    event-pct-moreangrysad-1:
+      emotions: [angry,sad]
+      pct_change: 150
+      time_in_seconds: 3
+      color: gray
+      next_instructions: [AME,RTM,EZA]
+
+  Percentage-Change-Emotionrank:
+    ### Events where the emotion on a specified rank changes by a certain percentage
+    event-pct-rank5-a:
+      ranks: [5]
+      pct_change: 100
+      time_in_seconds: 3
+      color: lightblue
+      next_instructions: [TCT,MLD,EZA]
+
+  Rank-Change:
+    ### Events where the rank of an emotion changes
+    event-rankchange-1:
+      ranks: [1]
+      rank_change: +1
+      time_in_seconds: 3
+      color: pink
+      next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]
+    event-rankchange-2:
+      ranks: [5]
+      rank_change: -1
+      time_in_seconds: 3
+      color: pink
+      next_instructions: [TCT,EZA]
+  

@@ -1,3 +1,4 @@
 include musico/emotions/models/emotion_model.hdf5
 include musico/emotions/models/haarcascade_frontalface_default.xml
-includde musico/emotions/demo/dinner.mp4
+include musico/emotions/demo/dinner.mp4
+include musico/emotions/demo/developer.mov
