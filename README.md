@@ -36,7 +36,8 @@ You can specify which webcam to use as parameter `use_webcam` (starting with 0).
 
 ### Start the programe
 
-Open a terminal and change to the installation directory. Use `python run_musico.py --help` for a list of available runtime options.
+Open a terminal and change to the installation directory. Activate the conda environment with `conda activate musico`. 
+Use `python run_musico.py --help` for a list of available runtime options.
 Use `python run_musico.py` to run the program for performance. After a short initial loading phase where you can rearrange the windows as needed, you will need to press **Enter** in the console to resume the program.
 
 ### End the programe
