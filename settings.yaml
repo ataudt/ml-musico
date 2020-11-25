@@ -68,6 +68,7 @@ Instructions:
       color: gray
       size: 20
       max_occurrence: 999
+
     END: # Special instruction for the end of the piece
       name: Ende!!
       color: orange
@@ -76,7 +77,7 @@ Instructions:
 
   Rules:
     ### Rules or constraints on the instructions
-    min_seconds_between_instructions: 20
+    min_seconds_between_instructions: 2
     max_seconds_between_instructions: 180 # If no instruction was given after this time, a random one is given (according to the other rules)
     max_minutes_song: 30    # Max length of the whole piece
     max_repeats_per_instruction: 1  # Number of times that an instruction can be repeated in direct succession
@@ -85,36 +86,52 @@ Instructions:
 Events:
   ## Events will be checked at runtime in the order that is specified here. The first event that matches will be used.
 
-  Percentage-Change-Emotion:
-    ### Events where a specified emotion changes by a certain percentage. Percentage changes are always interpreted as "at least that change or more" of the value given.
-    # event-pct-lessangry-1:          # somewhat systematic name for the event
-    #   emotions: [angry]         # name of the emotion
-    #   pct_change: -50           # change in percentage, either positive or negative
-    #   time_in_seconds: 3        # time window in which that change should happen
-    #   color: gray               # event color for plot
-    #   next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]  # list of possible instructions that might follow this event
-    event-pct-morehappy-1:
-      emotions: [happy]
-      pct_change: 150
-      time_in_seconds: 3
-      color: gray
-      next_instructions: [RTM,SND]
-    event-pct-moreangrysad-1:
-      emotions: [angry,sad]
-      pct_change: 150
-      time_in_seconds: 3
-      color: gray
-      next_instructions: [AME,RTM,EZA]
+  # Percentage-Change-Emotion:
+  #   ### Events where a specified emotion changes by a certain percentage. Percentage changes are always interpreted as "at least that change or more" of the value given.
+  #   # event-pct-lessangry-1:          # somewhat systematic name for the event
+  #   #   emotions: [angry]         # name of the emotion
+  #   #   pct_change: -50           # change in percentage, either positive or negative
+  #   #   time_in_seconds: 3        # time window in which that change should happen
+  #   #   color: gray               # event color for plot
+  #   #   next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]  # list of possible instructions that might follow this event
+  #   event-pct-morehappy-1:
+  #     emotions: [happy]
+  #     pct_change: 150
+  #     time_in_seconds: 3
+  #     color: gray
+  #     next_instructions: [RTM,SND]
+  #   event-pct-moreangrysad-1:
+  #     emotions: [angry,sad]
+  #     pct_change: 150
+  #     time_in_seconds: 3
+  #     color: gray
+  #     next_instructions: [AME,RTM,EZA]
 
-  Percentage-Change-Emotionrank:
-    ### Events where the emotion on a specified rank changes by a certain percentage
-    event-pct-rank5-a:
-      ranks: [5]
-      pct_change: 100
-      time_in_seconds: 3
-      color: lightblue
-      next_instructions: [TCT,MLD,EZA]
+  # Percentage-Change-Emotionrank:
+  #   ### Events where the emotion on a specified rank changes by a certain percentage
+  #   event-pct-rank5-a:
+  #     ranks: [5]
+  #     pct_change: 100
+  #     time_in_seconds: 3
+  #     color: lightblue
+  #     next_instructions: [TCT,MLD,EZA]
 
+  # Rank-Change:
+  #   ### Events where the rank of an emotion changes
+  #   event-rankchange-1:
+  #     ranks: [1]
+  #     rank_change: +1
+  #     time_in_seconds: 3
+  #     color: pink
+  #     next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]
+  #   event-rankchange-2:
+  #     ranks: [5]
+  #     rank_change: -1
+  #     time_in_seconds: 3
+  #     color: pink
+  #     next_instructions: [TCT,EZA]
+  
+  ## !! Only enable this section for testing impossible constraints, then disable all other events !!
   Rank-Change:
     ### Events where the rank of an emotion changes
     event-rankchange-1:
@@ -122,11 +139,4 @@ Events:
       rank_change: +1
       time_in_seconds: 3
       color: pink
-      next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]
-    event-rankchange-2:
-      ranks: [5]
-      rank_change: -1
-      time_in_seconds: 3
-      color: pink
-      next_instructions: [TCT,EZA]
-  
+      next_instructions: [AME]

@@ -27,7 +27,7 @@ def evaluate_events(history_emo, EVENTS, EMOTIONS):
     # Percentage-Change-Emotion
     new_event = process_pct_emotion_events(
         history_emo = history_emo,
-        events = EVENTS['Percentage-Change-Emotion']
+        events = EVENTS.get('Percentage-Change-Emotion')
     )
     if new_event is not None:
         return new_event
@@ -35,7 +35,7 @@ def evaluate_events(history_emo, EVENTS, EMOTIONS):
     # Percentage-Change-Emotionrank
     new_event = process_pct_emotionrank_events(
         history_emo = history_emo,
-        events = EVENTS['Percentage-Change-Emotionrank'],
+        events = EVENTS.get('Percentage-Change-Emotionrank'),
         EMOTIONS = EMOTIONS,
     )
     if new_event is not None:
@@ -44,7 +44,7 @@ def evaluate_events(history_emo, EVENTS, EMOTIONS):
     # Rank-Change
     new_event = process_rankchange_events(
         history_emo = history_emo,
-        events = EVENTS['Rank-Change'],
+        events = EVENTS.get('Rank-Change'),
         EMOTIONS = EMOTIONS,
     )
     if new_event is not None:
@@ -52,6 +52,10 @@ def evaluate_events(history_emo, EVENTS, EMOTIONS):
 
 def process_pct_emotion_events(history_emo, events):
     """Process percentage change events."""
+
+    # Directly return if events are missing
+    if events is None:
+        return None
 
     # Loop over all the possible events
     for event, props in events.items():
@@ -80,6 +84,10 @@ def process_pct_emotion_events(history_emo, events):
 
 def process_pct_emotionrank_events(history_emo, events, EMOTIONS):
     """Process percentage change events."""
+
+    # Directly return if events are missing
+    if events is None:
+        return None
 
     # Loop over all the possible events
     for event, props in events.items():
@@ -113,6 +121,10 @@ def process_pct_emotionrank_events(history_emo, events, EMOTIONS):
 
 def process_rankchange_events(history_emo, events, EMOTIONS):
     """Process rank change events."""
+
+    # Directly return if events are missing
+    if events is None:
+        return None
 
     # Loop over all the possible events
     for event, props in events.items():

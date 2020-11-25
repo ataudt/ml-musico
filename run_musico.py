@@ -1,3 +1,7 @@
+import logging
+import logging.config
+logger = logging.getLogger(__name__)
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -20,7 +24,7 @@ import time
 import yaml
 from configparser import ConfigParser
 import argparse
-from pprint import pprint
+from pprint import pformat
 
 from musico.instructions import instruct
 from musico.instructions import events
@@ -46,11 +50,24 @@ if __name__ == "__main__":
     )
     cargs = parser.parse_args()
 
-    # Import setttings
+    # Setup logging
+    logging_yaml = pkg_resources.resource_filename('musico.instructions', 'logging.yaml')
+    logger.info(logging_yaml)
+    if os.path.exists(logging_yaml):
+        with open(logging_yaml, 'rt') as f:
+            logger.info(f"LOGGING: reading file {logging_yaml}")
+            config = yaml.safe_load(f.read())
+        logging.config.dictConfig(config)
+    else:
+        default_level = logging.INFO
+        logger.info(f"LOGGING: using default_level {default_level}")
+        logging.basicConfig(level=default_level)
+
+    # Import settings
     with open(cargs.config_file, "r") as yamlfile:
         settings = yaml.load(yamlfile, Loader=yaml.FullLoader)
-    print("Imported settings: ")
-    pprint(settings)
+    logger.info("Imported settings: ")
+    logger.info(f"\n{pformat(settings)}")
 
     ## Assign Program parameters
     SHOW_EVENTS = cargs.show_events
@@ -76,6 +93,7 @@ if __name__ == "__main__":
     if not os.path.exists(SAVE_PATH):
         os.mkdir(SAVE_PATH)
     dt = datetime.datetime.now().strftime('%Y-%m-%dT%H%M')
+    logger.info(f">>> New run with timestamp '{dt}' <<<")
     output_file_video = os.path.join(
         SAVE_PATH, 
         f'{output_file_stem}_video_{dt}.avi' # save video feed to file
@@ -147,27 +165,31 @@ if __name__ == "__main__":
 
     # Starting video streaming
     cv2.namedWindow('window_frame')
-    video_capture = cv2.VideoCapture(0)
     ## Select video or webcam feed
-    cap = None
+    video_capture = None
     if cargs.video_file is not None:
         ### Use command line specified video file
-        cap = cv2.VideoCapture(cargs.video_file)
+        logger.info(f"Using video file {cargs.video_file}")
+        video_capture = cv2.VideoCapture(cargs.video_file)
     else:
         ### Use webcam or demo file
         if (USE_WEBCAM >= 0):
-            cap = cv2.VideoCapture(USE_WEBCAM) # Webcam source
+            logger.info(f"Using webcam {USE_WEBCAM}")
+            video_capture = cv2.VideoCapture(USE_WEBCAM) # Webcam source
         else:
             if USE_WEBCAM == -2:
                 demo_file = pkg_resources.resource_filename('musico.emotions.demo', 'developer.mov')
             else:
                 demo_file = pkg_resources.resource_filename('musico.emotions.demo', 'dinner.mp4')
-            cap = cv2.VideoCapture(demo_file) # Video file source
-        if not cap.isOpened():
-            raise ValueError("Video stream could not be opened. Aborting...")
+            logger.info(f"Using demo video {demo_file}")
+            video_capture = cv2.VideoCapture(demo_file) # Video file source
+        if not video_capture.isOpened():
+            message = "Video stream could not be opened. Aborting..."
+            logger.error(message)
+            raise ValueError(message)
 
     ## Prepare video save to file
-    frame_size = (int(cap.get(3)), int(cap.get(4)))
+    frame_size = (int(video_capture.get(3)), int(video_capture.get(4)))
     output_fwriter = cv2.VideoWriter(
         filename=output_file_video,
         fourcc=cv2.VideoWriter_fourcc('M','J','P','G'), # AVI
@@ -184,22 +206,23 @@ if __name__ == "__main__":
     )
 
     # Loop over frames of video feed
+    input('Press Enter to continue ...')
     time0 = time.perf_counter()
     iframe = -1
-    while cap.isOpened(): # True:
+    while video_capture.isOpened(): # True:
         ## Increase frame counter, set time
         iframe += 1
         itime = time.perf_counter() - time0
-        print(f'iframe = {iframe}, itime = {itime:.2f}s')
+        logger.info(f'iframe = {iframe}, itime = {itime:.2f}s')
 
         ## Grab, but not process, the next frame
-        retval = cap.grab()
+        retval = video_capture.grab()
 
         ## Process only every n-th frame
         if (iframe % NTH_FRAME) != 0:
             continue
         else:
-            retval, bgr_image = cap.retrieve()
+            retval, bgr_image = video_capture.retrieve()
 
         ## Check if video is empty
         if retval is False:
@@ -266,8 +289,6 @@ if __name__ == "__main__":
         emotion_history.loc[iframe, ['frame','time','time_min']] = [iframe, itime, itime/60.0]
         emotion_history.loc[iframe, EMOTIONS] = emotion_face_average
         emotion_history_rolling = emotion_history.rolling(window=ROLLING_WINDOW).mean()
-        emotionrank_history_rolling = emotion_history_rolling.copy()
-        emotionrank_history_rolling.loc[:, EMOTIONS] = emotion_history_rolling.loc[:, EMOTIONS].rank(axis=1, method='dense', ascending=False)
         for emotion in EMOTIONS:
             line = plotlines[emotion]
             line.set_ydata(emotion_history_rolling.loc[:, emotion])
@@ -283,6 +304,7 @@ if __name__ == "__main__":
         output_fwriter_annotated.write(bgr_image)
         ## Wait for "q" event
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            logger.info("Found 'break' event. Exiting loop ...")
             break
 
 
@@ -355,7 +377,7 @@ if __name__ == "__main__":
 
 
     # Close video feed
-    cap.release()
+    video_capture.release()
     cv2.destroyAllWindows()
 
     # Save emotion plot

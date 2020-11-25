@@ -1,34 +1,43 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import pandas as pd
-from pprint import pprint
 
 
 def check_validity(instruction_new, history_instr, rules):
+    """Check the validity of the new instruction.
+    
+    :param instruction_new: The dict with the instruction properties.
+    :param history_instr: The pandas DataFrame with the instruction history.
+    :param rules: The dict with the rule definitions.
+
+    :return: bool, str. A flag indicating validity and a message why.
+    """
+
 
     key = instruction_new['key']
 
     ## First instruction given always True (history_instr == None), except for END
     if history_instr is None:
         if key == 'END':
-            return False
+            return False, "Key 'END' specified for initialization."
         else:
-            return True
+            return True, None
 
     ## Check if we are over 'max_occurrence'
     if len(history_instr[history_instr['instruction-key'] == key]) >= instruction_new['max_occurrence']:
-        print(f"Exceeded 'max_occurrence'.")
-        return False
+        return False, f"Key '{key}' exceeded 'max_occurrence={instruction_new['max_occurrence']}'."
 
     ## Check if we are over 'max_repeats_per_instruction'
     last_n_keys = history_instr.tail(rules['max_repeats_per_instruction'])['instruction-key']
     if (last_n_keys == key).all():
-        print("Exceeded 'max_repeats_per_instruction'.")
-        return False
+        return False, f"Key '{key}' exceeded 'max_repeats_per_instruction={rules['max_repeats_per_instruction']}'."
 
     ## Check if END instruction was selected
     if key == 'END':
-        return False
+        return False, "Key 'END' was selected prematurely."
 
-    return True
+    return True, None
 
 
 def give_random_instruction(instructions, rules, history_instr):
@@ -36,6 +45,7 @@ def give_random_instruction(instructions, rules, history_instr):
 
     instruction_valid = False
     valid_counter = -1
+    reason_list = []
     while not instruction_valid:
         valid_counter += 1
         # Sample random instruction
@@ -44,18 +54,20 @@ def give_random_instruction(instructions, rules, history_instr):
         instruction_with_key['key'] = instruction_new.keys()[0]
 
         # Check validity
-        instruction_valid = check_validity(
+        instruction_valid, reason = check_validity(
             instruction_new=instruction_with_key,
             history_instr=history_instr,
             rules=rules,
         )
+        reason_list.append(reason)
 
-        if valid_counter >= 50:
-            message = "Impossible definition of rules. Available instructions: "
-            print(message)
-            pprint(instructions.to_dict())
-            print("Instruction history: ")
-            print(history_instr)
+        if valid_counter >= 20:
+            logger.warning("Impossible definition of rules.")
+            logger.warning(reason)
+            logger.warning("Available instructions: ")
+            logger.warning(instructions.to_dict())
+            logger.warning("Instruction history: ")
+            logger.warning(f'\n{history_instr}')
             instruction_valid = True
 
     return instruction_with_key
