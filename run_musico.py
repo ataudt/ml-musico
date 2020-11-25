@@ -194,14 +194,14 @@ if __name__ == "__main__":
         filename=output_file_video,
         fourcc=cv2.VideoWriter_fourcc('M','J','P','G'), # AVI
         # fourcc=cv2.VideoWriter_fourcc('X','2','6','4'), # MP4
-        fps=24, 
+        fps=5, 
         frameSize=frame_size,
     )
     output_fwriter_annotated = cv2.VideoWriter(
         filename=output_file_video_annotated,
         fourcc=cv2.VideoWriter_fourcc('M','J','P','G'), # AVI
         # fourcc=cv2.VideoWriter_fourcc('X','2','6','4'), # MP4
-        fps=24, 
+        fps=5, 
         frameSize=frame_size,
     )
 
@@ -317,6 +317,7 @@ if __name__ == "__main__":
             ## Song was playing so far
             if itime > INSTRUCTIONS_RULES['max_minutes_song']*60:
                 ## Song is over now
+                logger.info(f"Song is over. 'max_minutes_song={INSTRUCTIONS_RULES['max_minutes_song']}' reached.")
                 new_instruction = INSTRUCTIONS_PROPS['END']
                 new_instruction['key'] = 'END'
                 instruct.update_history(
@@ -329,6 +330,18 @@ if __name__ == "__main__":
                 time_since_last_instruction = itime - instruction_history.iloc[-1, :]['time']
                 if time_since_last_instruction > INSTRUCTIONS_RULES['max_seconds_between_instructions']:
                     ### Give new instruction because none has been given for too long
+                    logger.info(f"Giving new instruction because none has been given since 'max_seconds_between_instructions={INSTRUCTIONS_RULES['max_seconds_between_instructions']}'.")
+                    new_instruction = instruct.give_random_instruction(
+                        instructions=INSTRUCTIONS_PROPS, 
+                        rules=INSTRUCTIONS_RULES,
+                        history_instr=instruction_history,
+                    )
+                    instruct.update_history(
+                        history_instr = instruction_history, frame=iframe, time=itime, instruction_key=new_instruction['key'], event_key=None,
+                    )
+                elif time_since_last_instruction > last_instruction['max_duration_seconds']:
+                    ### Give new instruction because last instruction expired
+                    logger.info(f"Giving new instruction because last instruction exceeded 'max_duration_seconds={last_instruction['max_duration_seconds']}'.")
                     new_instruction = instruct.give_random_instruction(
                         instructions=INSTRUCTIONS_PROPS, 
                         rules=INSTRUCTIONS_RULES,
@@ -356,6 +369,7 @@ if __name__ == "__main__":
                                     ax=ax_em, time=emotion_history_rolling['time_min'].iloc[-1], event=new_event,
                                 )
                             #### Give next instruction
+                            logger.info(f"New instruction due to event key '{new_event['key']}'.")
                             next_instructions = INSTRUCTIONS_PROPS[new_event['next_instructions']]
                             new_instruction = instruct.give_random_instruction(
                                 instructions=next_instructions, 

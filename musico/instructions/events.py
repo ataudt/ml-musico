@@ -95,14 +95,17 @@ def process_pct_emotionrank_events(history_emo, events, EMOTIONS):
         ## Select appropriate window
         histwindow = history_emo[history_emo['time'] >= history_emo['time'].iloc[-1] - props['time_in_seconds']].copy()
         if len(histwindow) == 0:
-            ### In case all values are NaN
             return None
 
         ## Assign ranks to emotions
         histwindow_rank = histwindow.copy()
         histwindow_rank.loc[:, EMOTIONS] = histwindow.loc[:, EMOTIONS].rank(axis=1, method='dense', ascending=False)
+        if histwindow_rank[EMOTIONS].iloc[0, :].isna().any():
+            return None
         ## Rename emotion columns to the rank at the start of the window
-        rename_map = pd.Series(histwindow_rank.iloc[0,:][EMOTIONS], index=EMOTIONS)
+        colnames_rank = histwindow_rank.iloc[0,:][EMOTIONS]
+        colnames_emotions = EMOTIONS
+        rename_map = pd.Series(colnames_rank, index=colnames_emotions)
         histwindow.rename(columns=rename_map.to_dict(), inplace=True)
 
         ## Loop over all ranks in event
@@ -132,14 +135,17 @@ def process_rankchange_events(history_emo, events, EMOTIONS):
         ## Select appropriate window
         histwindow = history_emo[history_emo['time'] >= history_emo['time'].iloc[-1] - props['time_in_seconds']].copy()
         if len(histwindow) == 0:
-            ### In case all values are NaN
             return None
 
         ## Assign ranks to emotions
         histwindow_rank = histwindow.copy()
         histwindow_rank.loc[:, EMOTIONS] = histwindow.loc[:, EMOTIONS].rank(axis=1, method='dense', ascending=False)
+        if histwindow_rank[EMOTIONS].iloc[0, :].isna().any():
+            return None
         ## Rename emotion columns to the rank at the start of the window
-        rename_map = pd.Series(histwindow_rank.iloc[0,:][EMOTIONS], index=EMOTIONS)
+        colnames_rank = histwindow_rank.iloc[0,:][EMOTIONS]
+        colnames_emotions = EMOTIONS
+        rename_map = pd.Series(colnames_rank, index=colnames_emotions)
         histwindow_rank.rename(columns=rename_map.to_dict(), inplace=True)
 
         ## Loop over all ranks in event

@@ -1,7 +1,7 @@
 # This settings.yaml file specifies all available parameters for this project
 Program:
   ## This section lists all the available parameters for the program
-  use_webcam: -2          # -1 and -2 are demo videos, values 0 and above select available webcams.
+  use_webcam: 0          # -1 and -2 are demo videos, values 0 and above select available webcams.
   rolling_window: 5       # Number of frames for rolling average.
   nth_frame: 1            # Process only every n-th frame. This can speed up processing.
   save_path: './storage'  # Folder for storing recorded videos and data.
@@ -38,46 +38,54 @@ Instructions:
       color: purple                     # Color for instruction display
       size: 20                          # Font size for instruction display
       max_occurrence: 4                 # Number of times in total that an instruction may appear in the song
+      max_duration_seconds: 10          # Maximum number of seconds before the next instruction is given
     EZA: 
       name: Einzelaktion
       color: black
       size: 40
       max_occurrence: 999
+      max_duration_seconds: 180
     FLA: 
       name: Fläche
       color: green
       size: 50
       max_occurrence: 999
+      max_duration_seconds: 180
     MLD: 
       name: Melodie
       color: red
       size: 30
       max_occurrence: 999
+      max_duration_seconds: 180
     RTM: 
       name: Rythmus
       color: black
       size: 30
       max_occurrence: 999
+      max_duration_seconds: 180
     SND: 
       name: Sounds / Geräuschklänge
       color: blue
       size: 25
       max_occurrence: 999
+      max_duration_seconds: 180
     TCT: 
       name: Tacet / Stille & Freeze
       color: gray
       size: 20
       max_occurrence: 999
+      max_duration_seconds: 180
 
     END: # Special instruction for the end of the piece
       name: Ende!!
       color: orange
       size: 50
       max_occurrence: 1
+      max_duration_seconds: 99999
 
   Rules:
     ### Rules or constraints on the instructions
-    min_seconds_between_instructions: 2
+    min_seconds_between_instructions: 20
     max_seconds_between_instructions: 180 # If no instruction was given after this time, a random one is given (according to the other rules)
     max_minutes_song: 30    # Max length of the whole piece
     max_repeats_per_instruction: 1  # Number of times that an instruction can be repeated in direct succession
@@ -94,13 +102,13 @@ Events:
   #   #   time_in_seconds: 3        # time window in which that change should happen
   #   #   color: gray               # event color for plot
   #   #   next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]  # list of possible instructions that might follow this event
-  #   event-pct-morehappy-1:
+  #   event-pct-morehappy-150:
   #     emotions: [happy]
   #     pct_change: 150
   #     time_in_seconds: 3
   #     color: gray
   #     next_instructions: [RTM,SND]
-  #   event-pct-moreangrysad-1:
+  #   event-pct-moreangrysad-150:
   #     emotions: [angry,sad]
   #     pct_change: 150
   #     time_in_seconds: 3
@@ -109,9 +117,9 @@ Events:
 
   # Percentage-Change-Emotionrank:
   #   ### Events where the emotion on a specified rank changes by a certain percentage
-  #   event-pct-rank5-a:
+  #   event-pct-rank5-100:
   #     ranks: [5]
-  #     pct_change: 100
+  #     pct_change: 200
   #     time_in_seconds: 3
   #     color: lightblue
   #     next_instructions: [TCT,MLD,EZA]
