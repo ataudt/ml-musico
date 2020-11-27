@@ -1,7 +1,7 @@
 # This settings.yaml file specifies all available parameters for this project
 Program:
   ## This section lists all the available parameters for the program
-  use_webcam: 0          # -1 and -2 are demo videos, values 0 and above select available webcams.
+  use_webcam: -2          # -1 and -2 are demo videos, values 0 and above select available webcams.
   rolling_window: 5       # Number of frames for rolling average.
   nth_frame: 1            # Process only every n-th frame. This can speed up processing.
   save_path: './storage'  # Folder for storing recorded videos and data.
@@ -36,42 +36,49 @@ Instructions:
     AME:                                # Identifier for data analysis
       name: Aussermusikalisches Event   # Text for instruction display
       color: purple                     # Color for instruction display
+      color_background: black           # Background color for instruction display
       size: 20                          # Font size for instruction display
       max_occurrence: 4                 # Number of times in total that an instruction may appear in the song
       max_duration_seconds: 10          # Maximum number of seconds before the next instruction is given
     EZA: 
       name: Einzelaktion
       color: black
+      color_background: gray
       size: 40
       max_occurrence: 999
       max_duration_seconds: 180
     FLA: 
       name: Fläche
       color: green
+      color_background: purple
       size: 50
       max_occurrence: 999
       max_duration_seconds: 180
     MLD: 
       name: Melodie
       color: red
+      color_background: yellow
       size: 30
       max_occurrence: 999
       max_duration_seconds: 180
     RTM: 
       name: Rythmus
       color: black
+      color_background: white
       size: 30
       max_occurrence: 999
       max_duration_seconds: 180
     SND: 
       name: Sounds / Geräuschklänge
       color: blue
+      color_background: green
       size: 25
       max_occurrence: 999
       max_duration_seconds: 180
     TCT: 
       name: Tacet / Stille & Freeze
       color: gray
+      color_background: black
       size: 20
       max_occurrence: 999
       max_duration_seconds: 180
@@ -79,6 +86,7 @@ Instructions:
     END: # Special instruction for the end of the piece
       name: Ende!!
       color: orange
+      color_background: white
       size: 50
       max_occurrence: 1
       max_duration_seconds: 99999

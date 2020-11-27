@@ -89,6 +89,7 @@ def draw_instruction(ax, instruction):
         {'color': instruction['color'], 'fontsize': instruction['size']},
         horizontalalignment='center', verticalalignment='center', transform=ax.transAxes
     )
+    ax.get_figure().patch.set_facecolor(instruction['color_background'])
     return ax
 
 def update_history(history_instr, frame, time, instruction_key, event_key):
