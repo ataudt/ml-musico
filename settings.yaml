@@ -1,9 +1,9 @@
 # This settings.yaml file specifies all available parameters for this project
 Program:
   ## This section lists all the available parameters for the program
-  use_webcam: -2          # -1 and -2 are demo videos, values 0 and above select available webcams.
-  rolling_window: 5       # Number of frames for rolling average.
-  nth_frame: 1            # Process only every n-th frame. This can speed up processing.
+  use_webcam: 0          # -1 and -2 are demo videos, values 0 and above select available webcams.
+  rolling_window: 10       # Number of frames for rolling average.
+  nth_frame: 2            # Process only every n-th frame. This can speed up processing.
   save_path: './storage'  # Folder for storing recorded videos and data.
 
 
@@ -81,7 +81,7 @@ Instructions:
       color_background: black
       size: 20
       max_occurrence: 999
-      max_duration_seconds: 180
+      max_duration_seconds: 10
 
     END: # Special instruction for the end of the piece
       name: Ende!!
@@ -94,8 +94,8 @@ Instructions:
   Rules:
     ### Rules or constraints on the instructions
     min_seconds_between_instructions: 20
-    max_seconds_between_instructions: 180 # If no instruction was given after this time, a random one is given (according to the other rules)
-    max_minutes_song: 30    # Max length of the whole piece
+    max_seconds_between_instructions: 120 # If no instruction was given after this time, a random one is given (according to the other rules)
+    max_minutes_song: 10    # Max length of the whole piece
     max_repeats_per_instruction: 1  # Number of times that an instruction can be repeated in direct succession
 
 
@@ -113,37 +113,37 @@ Events:
     event-pct-morehappy-150:
       emotions: [happy]
       pct_change: 150
-      time_in_seconds: 3
+      time_in_seconds: 5
       color: gray
       next_instructions: [RTM,SND]
     event-pct-moreangrysad-150:
       emotions: [angry,sad]
       pct_change: 150
-      time_in_seconds: 3
+      time_in_seconds: 5
       color: gray
-      next_instructions: [AME,RTM,EZA]
+      next_instructions: [FLA,EZA]
 
   Percentage-Change-Emotionrank:
     ### Events where the emotion on a specified rank changes by a certain percentage
-    event-pct-rank5-100:
+    event-pct-rank5-200:
       ranks: [5]
       pct_change: 200
-      time_in_seconds: 3
+      time_in_seconds: 5
       color: lightblue
-      next_instructions: [TCT,MLD,EZA]
+      next_instructions: [AME,TCT]
 
   Rank-Change:
     ### Events where the rank of an emotion changes
     event-rankchange-1:
       ranks: [1]
       rank_change: +1
-      time_in_seconds: 3
+      time_in_seconds: 5
       color: pink
-      next_instructions: [AME,EZA,FLA,MLD,RTM,SND,TCT]
+      next_instructions: [EZA,FLA,MLD,RTM,SND]
     event-rankchange-2:
       ranks: [5]
       rank_change: -1
-      time_in_seconds: 3
+      time_in_seconds: 5
       color: pink
       next_instructions: [TCT,EZA]
   
